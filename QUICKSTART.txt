@@ -1,0 +1,75 @@
+# 🚀 SAHIFALAB Bot - Quick Start
+
+## ⚡ 5-Minute Setup
+
+### 1. Fix ADMIN_ID
+Edit `.env` and set your Telegram ID:
+```dotenv
+ADMIN_ID=YOUR_NUMBER_HERE
+```
+Get ID from @userinfobot on Telegram
+
+### 2. Start Bot
+```bash
+python main.py
+```
+
+### 3. Add Your First File
+Send to bot:
+```
+/add test https://t.me/sahifalab/1
+```
+
+**Response:**
+```
+✅ Sam: Muvaffaqiyat! Yangi link ma'lumotlar bazasiga qo'shildi. ✅
+```
+
+### 4. Use in YouTube Link
+Description link:
+```
+https://t.me/Sahifalab_obunachi_bot?start=test
+```
+
+---
+
+## 📚 Features
+
+✅ Users click YouTube link → Auto-verify subscription → Download PDF  
+✅ Add files instantly with `/add` command (no coding!)  
+✅ All messages in Uzbek  
+✅ All files stored in `files.json` (no database needed)  
+
+---
+
+## 🎯 Admin Commands
+
+```
+/add atom_odatlar https://t.me/sahifalab/10
+```
+
+**That's it!** Bot stores it and it's instantly available.
+
+---
+
+## 📝 Check Current Files
+
+Open `files.json`:
+```json
+{
+  "atom_odatlar": "https://t.me/sahifalab/10",
+  "deep_work": "https://t.me/sahifalab/11"
+}
+```
+
+---
+
+## ⚠️ Remember
+
+- ADMIN_ID must be a **number** (not username!)
+- File URLs must point to Telegram posts
+- `/start file_id` must match the key in `files.json`
+
+---
+
+**Everything else is automatic!** 🎉

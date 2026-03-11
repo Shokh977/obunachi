@@ -86,10 +86,25 @@ def extract_message_id(url):
 async def check_subscription(user_id: int, channel_username: str) -> bool:
     """Check if user is subscribed to channel"""
     try:
-        chat_member = await bot.get_chat_member(chat_id=f"@{channel_username}", user_id=user_id)
-        return chat_member.status in ["member", "administrator", "creator", "restricted"]
+        # Username-dagi @ belgisini tozalab, o'zimiz bitta qo'shamiz
+        clean_username = channel_username.replace("@", "")
+        chat_member = await bot.get_chat_member(chat_id=f"@{clean_username}", user_id=user_id)
+        
+        # Statuslarni tekshirish
+        allowed_statuses = ["member", "administrator", "creator"]
+        return chat_member.status in allowed_statuses
     except Exception as e:
-        logger.error(f"Error checking subscription: {e}")
+        error_str = str(e)
+        
+        # Agar kanal topilmasa - adminni ogohlantir
+        if "chat not found" in error_str.lower():
+            logger.critical(
+                f"🚨 CRITICAL: Bot MUST be administrator in @{channel_username}. "
+                f"Add the bot to the channel and give it admin rights."
+            )
+        else:
+            logger.error(f"Error checking subscription for @{channel_username}: {e}")
+        
         return False
 
 
@@ -103,19 +118,20 @@ def is_admin(user_id: int) -> bool:
 # ========================
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message, command: CommandObject):
-    """Handle /start command with optional message_id"""
+    """Handle /start command with optional message_id (User Flow)"""
     
     user_id = message.from_user.id
     message_id = command.args
     
     logger.info(f"User {user_id} started with message_id: {message_id}")
     
-    # If no message_id provided
+    # If no message_id provided - welcome message
     if not message_id:
         await message.answer(
-            "Assalomu alaykum!👋\n\n"
-            "SAHIFALAB. "
-            "Yangi videolarning materiallarini bu bot orqali olishingiz mumkin. 😊"
+            "Assalomu alaykum! 👋 Men Samman.\n\n"
+            "SAHIFALAB YouTube kanalining videolarining "
+            "foydalı materiallari shu bot orqali taqdim etiladi. 😊\n\n"
+            "Videoning tavsifida berilgan linkni bosing!"
         )
         return
     
@@ -123,7 +139,7 @@ async def cmd_start(message: types.Message, command: CommandObject):
     original_link = LinkManager.get_link(message_id)
     if not original_link:
         await message.answer(
-            "Assalomu alaykum! Kechirasiz, bu material bazada topilmadi. 😔"
+            "Assalomu alaykum! Kechirasiz, bu material bazada yo'q. 🧐"
         )
         logger.warning(f"Message ID '{message_id}' not found in database")
         return
@@ -132,7 +148,7 @@ async def cmd_start(message: types.Message, command: CommandObject):
     is_member = await check_subscription(user_id, CHANNEL_USERNAME)
     
     if is_member:
-        # User is subscribed - show the link
+        # ✅ User is subscribed - show the link button
         builder = InlineKeyboardBuilder()
         builder.row(types.InlineKeyboardButton(
             text="📄 Materialni ko'rish",
@@ -140,38 +156,39 @@ async def cmd_start(message: types.Message, command: CommandObject):
         ))
         
         await message.answer(
-            "Assalomu alaykum! Ajoyib tanlov. 🎉 Mana siz so'ragan material:",
+            "Assalomu alaykum! Ajoyib tanlov. 🎉\n\n"
+            "Mana siz so'ragan material:",
             reply_markup=builder.as_markup()
         )
-        logger.info(f"User {user_id} is member - link shown for message_id: {message_id}")
+        logger.info(f"User {user_id} is subscribed - material shown for message_id: {message_id}")
     else:
-        # User is not subscribed
+        # ❌ User is not subscribed - show join and verify buttons
         builder = InlineKeyboardBuilder()
         builder.row(types.InlineKeyboardButton(
             text="📢 Kanalga obuna bo'lish",
             url=f"https://t.me/{CHANNEL_USERNAME}"
         ))
         builder.row(types.InlineKeyboardButton(
-            text="✅ Obunani tekshirish",
+            text="✅ Tekshirish",
             callback_data=f"verify_{message_id}"
         ))
         
         await message.answer(
-            "Assalomu alayku! 😊\n\n"
+            "Assalomu alaykum! 😊\n\n"
             "Foydali materialni yuklashdan oldin kanalimizga obuna bo'lishingizni so'rayman. "
             "Bu bizga yangi videolar uchun kuch beradi!",
             reply_markup=builder.as_markup()
         )
-        logger.info(f"User {user_id} is not member - subscription prompt shown")
+        logger.info(f"User {user_id} not subscribed - join prompt shown")
 
 
 @dp.message(F.text.startswith("https://t.me/"))
 async def handle_admin_link(message: types.Message):
-    """Handle admin link submission"""
+    """Handle admin link submission (Admin Flow)"""
     
     user_id = message.from_user.id
     
-    # Check if user is admin
+    # ✅ ADMIN FLOW: Check if user is admin
     if not is_admin(user_id):
         await message.answer(
             "Assalomu alaykum! Kechirasiz, bu funksiya faqat admin uchun. 🚫"
@@ -183,8 +200,9 @@ async def handle_admin_link(message: types.Message):
     message_id = extract_message_id(message.text)
     if not message_id:
         await message.answer(
-            "Assalomu alaykum! Linkni to'g'ri formatda yuboring.\n"
-            "Misol: https://t.me/sahifalab1/12345"
+            "Assalomu alaykum! Linkni to'g'ri formatda yuboring.\n\n"
+            "✅ Misol:\n`https://t.me/sahifalab1/12345`",
+            parse_mode="Markdown"
         )
         return
     
@@ -197,12 +215,13 @@ async def handle_admin_link(message: types.Message):
         generated_link = f"https://t.me/{bot_username}?start={message_id}"
         
         await message.answer(
-            "Assalomu alaykum!🖐\n\n"
-            "Material bazaga qo'shildi. Videongiz ostiga mana bu linkni qo'ying:\n\n"
+            "Assalomu alaykum! 🖐 Men Samman.\n\n"
+            "Material bazaga qo'shildi. ✅\n\n"
+            "Videongiz ostiga mana bu linkni qo'ying:\n\n"
             f"`{generated_link}`",
             parse_mode="Markdown"
         )
-        logger.info(f"Admin {user_id} added link: {message_id} -> {message.text}")
+        logger.info(f"Admin {user_id} added link: message_id={message_id}")
     else:
         await message.answer(
             "Assalomu alaykum! Xatolik yuz berdi. Qayta urinib ko'ring. ❌"
@@ -214,7 +233,7 @@ async def handle_admin_link(message: types.Message):
 # ========================
 @dp.callback_query(F.data.startswith("verify_"))
 async def callback_verify_subscription(callback: types.CallbackQuery):
-    """Handle subscription verification button"""
+    """Handle subscription verification button (User verifies after joining)"""
     
     user_id = callback.from_user.id
     message_id = callback.data.split("_", 1)[1]
@@ -225,7 +244,7 @@ async def callback_verify_subscription(callback: types.CallbackQuery):
     is_member = await check_subscription(user_id, CHANNEL_USERNAME)
     
     if is_member:
-        # User just subscribed
+        # ✅ User just subscribed - EDIT message to show material button
         original_link = LinkManager.get_link(message_id)
         if not original_link:
             await callback.answer("Xatolik yuz berdi!", show_alert=True)
@@ -238,13 +257,14 @@ async def callback_verify_subscription(callback: types.CallbackQuery):
         ))
         
         await callback.message.edit_text(
-            "Assalomu alaykum! Ajoyib tanlov. 🎉 Mana siz so'ragan material:",
+            "Assalomu alaykum! Ajoyib tanlov. 🎉\n\n"
+            "Mana siz so'ragan material:",
             reply_markup=builder.as_markup()
         )
         await callback.answer("Shukriyalar! Siz kanalga obuna bo'lgansiz! ✅", show_alert=False)
-        logger.info(f"User {user_id} verified and subscribed")
+        logger.info(f"User {user_id} verified and now subscribed")
     else:
-        # Still not subscribed
+        # ❌ Still not subscribed
         await callback.answer(
             "Hali kanalga obuna bo'lmagansiz. Iltimos, avval obuna bo'ling!",
             show_alert=True

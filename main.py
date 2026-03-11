@@ -113,8 +113,8 @@ async def cmd_start(message: types.Message, command: CommandObject):
     # If no message_id provided
     if not message_id:
         await message.answer(
-            "Assalomu alaykum! Men Samman. 👋\n\n"
-            "SAHIFALAB YouTube kanalining do'stingman. "
+            "Assalomu alaykum!👋\n\n"
+            "SAHIFALAB. "
             "Yangi videolarning materiallarini bu bot orqali olishingiz mumkin. 😊"
         )
         return
@@ -157,7 +157,7 @@ async def cmd_start(message: types.Message, command: CommandObject):
         ))
         
         await message.answer(
-            "Assalomu alaykum! Men Samman. 😊\n\n"
+            "Assalomu alayku! 😊\n\n"
             "Foydali materialni yuklashdan oldin kanalimizga obuna bo'lishingizni so'rayman. "
             "Bu bizga yangi videolar uchun kuch beradi!",
             reply_markup=builder.as_markup()
@@ -197,7 +197,7 @@ async def handle_admin_link(message: types.Message):
         generated_link = f"https://t.me/{bot_username}?start={message_id}"
         
         await message.answer(
-            "Assalomu alaykum! Men Samman. 🖐\n\n"
+            "Assalomu alaykum!🖐\n\n"
             "Material bazaga qo'shildi. Videongiz ostiga mana bu linkni qo'ying:\n\n"
             f"`{generated_link}`",
             parse_mode="Markdown"

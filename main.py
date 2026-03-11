@@ -5,9 +5,7 @@ from typing import Optional
 from dotenv import load_dotenv
 from aiogram import Bot, Dispatcher, F, types
 from aiogram.filters import CommandStart
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton
-from aiogram.fsm.context import FSMContext
-from aiogram.client.session import aiohttp_session
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 from file_mapping import get_post_url
 
@@ -166,12 +164,8 @@ async def check_subscription_handler(callback_query: types.CallbackQuery):
     
     if is_member:
         await callback_query.answer("Shukriyalar! Siz kanalga obuna bo'lgansiz! ✅", show_alert=False)
-        # Optionally, here you can trigger file sending or next action
-        # For now, we just acknowledge
     else:
         await callback_query.answer(MESSAGES["not_member"], show_alert=True)
-    
-    await callback_query.answer()
 
 
 # ========================
@@ -196,7 +190,7 @@ async def main():
         # Start polling
         await dp.start_polling(bot)
     finally:
-        await bot.session.close()
+        await bot.session.close() if bot.session else None
 
 
 if __name__ == "__main__":
